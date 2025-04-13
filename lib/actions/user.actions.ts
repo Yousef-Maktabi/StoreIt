@@ -1,10 +1,11 @@
 "use server";
 
-import { ID, Query } from "node-appwrite";
+import { createAdminClient, createSessionClient } from "@/lib/index";
+import { appwriteConfig } from "@/lib/appwrite/config";
+import { Query, ID } from "node-appwrite";
+import { parseStringify } from "@/lib/utils";
 import { cookies } from "next/headers";
-import { createAdminClient } from "@/lib/index";
-import { appwriteConfig } from "../appwrite/config";
-import { parseStringify } from "../utils";
+import { avatarPlaceholderUrl } from "@/constants";
 
 const getUserByEmail = async (email: string) => {
   const { databases } = await createAdminClient();
@@ -31,7 +32,7 @@ export const sendEmailOTP = async ({ email }: { email: string }) => {
 
     return session.userId;
   } catch (error) {
-    handleError(error, "Fail to send email OTP");
+    handleError(error, "Failed to send email OTP");
   }
 };
 
@@ -57,8 +58,7 @@ export const createAccount = async ({
       {
         fullName,
         email,
-        avatar:
-          "https://cdn.pixabay.com/photo/2016/08/08/09/17/avatar-1577909_1280.png",
+        avatar: avatarPlaceholderUrl,
         accountId,
       }
     );
@@ -88,6 +88,26 @@ export const verifySecret = async ({
 
     return parseStringify({ sessionId: session.$id });
   } catch (error) {
-    handleError(error, "Fail to verify OTP");
+    handleError(error, "Failed to verify OTP");
+  }
+};
+
+export const getCurrentUser = async () => {
+  try {
+    const { databases, account } = await createSessionClient();
+
+    const result = await account.get();
+
+    const user = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.usersCollectionId,
+      [Query.equal("accountId", result.$id)]
+    );
+
+    if (user.total <= 0) return null;
+
+    return parseStringify(user.documents[0]);
+  } catch (error) {
+    console.log(error);
   }
 };
