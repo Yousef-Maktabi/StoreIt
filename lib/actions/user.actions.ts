@@ -6,6 +6,7 @@ import { Query, ID } from "node-appwrite";
 import { parseStringify } from "@/lib/utils";
 import { cookies } from "next/headers";
 import { avatarPlaceholderUrl } from "@/constants";
+import { redirect } from "next/navigation";
 
 const getUserByEmail = async (email: string) => {
   const { databases } = await createAdminClient();
@@ -109,5 +110,32 @@ export const getCurrentUser = async () => {
     return parseStringify(user.documents[0]);
   } catch (error) {
     console.log(error);
+  }
+};
+
+export const signOutUser = async () => {
+  const { account } = await createSessionClient();
+  try {
+    await account.deleteSession("current");
+    (await cookies()).delete("appwrite-session");
+  } catch (error) {
+    handleError(error, "Fail to sign out user.");
+  } finally {
+    redirect("/sign-in");
+  }
+};
+
+export const signInUser = async ({ email }: { email: string }) => {
+  try {
+    const existingUser = await getUserByEmail(email);
+
+    if (existingUser) {
+      await sendEmailOTP({ email });
+      return parseStringify(existingUser.accountId);
+    }
+
+    return parseStringify({ accountId: null, error: "User not found" });
+  } catch (error) {
+    handleError(error, "Failed to sign in user.");
   }
 };
