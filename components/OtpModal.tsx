@@ -39,6 +39,7 @@ const OtpModal = ({ accountId, email }: Props) => {
 
     try {
       const sessionId = await verifySecret({ accountId, password });
+      debugger;
 
       if (sessionId) {
         router.push("/");

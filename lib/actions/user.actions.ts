@@ -76,9 +76,13 @@ export const verifySecret = async ({
   password: string;
 }) => {
   try {
+    console.log({ accountId, password });
     const { account } = await createAdminClient();
 
-    const session = await account.createSession(accountId, password);
+    const session = await account.createSession(
+      "67ff6a520017071d513d",
+      password
+    );
 
     (await cookies()).set("appwrite-session", session.secret, {
       path: "/",
@@ -131,7 +135,7 @@ export const signInUser = async ({ email }: { email: string }) => {
 
     if (existingUser) {
       await sendEmailOTP({ email });
-      return parseStringify(existingUser.accountId);
+      return parseStringify({ accountId: existingUser.accountId });
     }
 
     return parseStringify({ accountId: null, error: "User not found" });
